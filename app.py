@@ -4,7 +4,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 import streamlit as st
 
 # Load the book dataset (Update the file path if necessary)
-file_path = 'Books_Dataset.xlsx'  # Update this path
+file_path = 'Books.csv'  # Update this path
 books_df = pd.read_excel(file_path)
 
 # Fill NaN values with empty strings to prevent errors in text processing
