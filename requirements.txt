@@ -3,4 +3,3 @@ pandas
 scikit-learn
 openpyxl  # If you're working with .xlsx files
 fastapi
-urllib
