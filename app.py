@@ -4,7 +4,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 import streamlit as st
 from urllib.parse import urlparse, parse_qs
 
-# Load the book dataset
+# Load the book dataset (Update the file path if necessary)
 file_path = 'AWGP_Databases.xlsx'  # Replace with your dataset file path
 books_df = pd.read_excel(file_path)
 
@@ -25,7 +25,7 @@ count_matrix = count_vectorizer.fit_transform(books_df['combined_features'])
 # Compute cosine similarity between books
 cosine_sim = cosine_similarity(count_matrix, count_matrix)
 
-# Function to get book recommendations
+# Function to get book recommendations based on main category, sub category, or language
 def get_recommendations(query, cosine_sim=cosine_sim):
     # Fill NaN values with empty strings
     books_df.fillna('', inplace=True)
@@ -34,7 +34,7 @@ def get_recommendations(query, cosine_sim=cosine_sim):
     mask = (
         books_df['Main category'].str.contains(query, case=False, na=False) |
         books_df['Sub Category'].str.contains(query, case=False, na=False) |
-        books_df['Language'].str.contains(query, case=False, na=False)      |
+        books_df['Language'].str.contains(query, case=False, na=False) |
         books_df['BookNameAndCode'].str.contains(query, case=False, na=False)
     )
 
@@ -63,28 +63,33 @@ def get_recommendations(query, cosine_sim=cosine_sim):
     else:
         return "Sorry, no book found matching that query. Please try another."
 
+
 # Streamlit App UI and Logic
 def book_recommendation_system():
     st.title('Book Recommendation System')
 
-    # Extract query parameters from the URL
-    query_params = parse_qs(urlparse(st.experimental_get_url()).query)
-    user_input = query_params.get('query', [''])[0]  # Default to an empty string if no query parameter
+    # Capture query parameters from the URL
+    query_params = st.experimental_get_query_params()
 
-    # Debug: Check query params (for testing purposes)
-    st.write("Debug: Captured query:", user_input)
+    # Check if the query parameter is present and set it to session state
+    if 'query' in query_params:
+        user_input = query_params['query'][0]
+        st.session_state.user_input = user_input
+    else:
+        user_input = st.session_state.get('user_input', '')
 
+    # Input for book category, subcategory, or language
     if user_input:
-        # Display the query being processed
+        # Provide book recommendations based on user input
         st.write(f"Looking for recommendations related to: **{user_input}**")
 
-        # Get recommendations based on the query
+        # Call the recommendation function
         recommendations = get_recommendations(user_input)
 
         # Display recommendations
         display_recommendations(recommendations)
     else:
-        st.write("No query provided. Please enter a search term in the search bar.")
+        st.write("Please enter a search term to find book recommendations.")
 
 # Function to display the recommendations in a table with clickable links
 def display_recommendations(recommendations):
@@ -101,6 +106,7 @@ def display_recommendations(recommendations):
         st.write(recommendations.to_html(escape=False, index=False), unsafe_allow_html=True)
     else:
         st.write(recommendations)
+
 
 # Run the book recommendation system
 if __name__ == "__main__":
