@@ -29,7 +29,7 @@ def get_recommendations(query, cosine_sim=cosine_sim):
     # Fill NaN values with empty strings
     books_df.fillna('', inplace=True)
 
-    # Create a mask for matching the query across the relevant columns
+    # Create a mask for matching the query across relevant columns
     mask = (
         books_df['Main category'].str.contains(query, case=False, na=False) |
         books_df['Sub Category'].str.contains(query, case=False, na=False) |
@@ -45,6 +45,15 @@ def get_recommendations(query, cosine_sim=cosine_sim):
         for idx in indices:
             sim_scores += list(enumerate(cosine_sim[idx]))
 
+        # Prioritize exact matches by boosting their scores
+        exact_match_mask = books_df['BookNameAndCode'].str.contains(query, case=False, na=False)
+        exact_match_indices = books_df[exact_match_mask].index
+
+        # Add exact matches with a high score (e.g., 1.5) to prioritize them
+        for idx in exact_match_indices:
+            sim_scores.append((idx, 1.5))  # Boost exact matches
+
+        # Remove duplicates and sort by similarity score
         sim_scores = sorted(list(set(sim_scores)), key=lambda x: x[1], reverse=True)[:50]
         book_indices = [i[0] for i in sim_scores]
 
