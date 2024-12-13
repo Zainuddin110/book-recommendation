@@ -2,8 +2,9 @@ import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import streamlit as st
+from urllib.parse import urlparse, parse_qs
 
-# Load the book dataset (Update the file path if necessary)
+# Load the book dataset
 file_path = 'AWGP_Databases.xlsx'  # Replace with your dataset file path
 books_df = pd.read_excel(file_path)
 
@@ -24,7 +25,7 @@ count_matrix = count_vectorizer.fit_transform(books_df['combined_features'])
 # Compute cosine similarity between books
 cosine_sim = cosine_similarity(count_matrix, count_matrix)
 
-# Function to get book recommendations based on main category, sub category, or language
+# Function to get book recommendations
 def get_recommendations(query, cosine_sim=cosine_sim):
     # Fill NaN values with empty strings
     books_df.fillna('', inplace=True)
@@ -66,18 +67,24 @@ def get_recommendations(query, cosine_sim=cosine_sim):
 def book_recommendation_system():
     st.title('Book Recommendation System')
 
-    # Input for book category, subcategory, or language
-    user_input = st.text_input("Enter a main category, sub category, Book Name or language:")
+    # Extract query parameters from the URL
+    query_params = parse_qs(urlparse(st.experimental_get_url()).query)
+    user_input = query_params.get('query', [''])[0]  # Default to an empty string if no query parameter
+
+    # Debug: Check query params (for testing purposes)
+    st.write("Debug: Captured query:", user_input)
 
     if user_input:
-        # Provide book recommendations based on user input
+        # Display the query being processed
         st.write(f"Looking for recommendations related to: **{user_input}**")
 
-        # Call the recommendation function
+        # Get recommendations based on the query
         recommendations = get_recommendations(user_input)
 
         # Display recommendations
         display_recommendations(recommendations)
+    else:
+        st.write("No query provided. Please enter a search term in the search bar.")
 
 # Function to display the recommendations in a table with clickable links
 def display_recommendations(recommendations):
@@ -94,7 +101,6 @@ def display_recommendations(recommendations):
         st.write(recommendations.to_html(escape=False, index=False), unsafe_allow_html=True)
     else:
         st.write(recommendations)
-
 
 # Run the book recommendation system
 if __name__ == "__main__":
