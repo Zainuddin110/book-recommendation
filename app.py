@@ -27,7 +27,6 @@ cosine_sim = cosine_similarity(count_matrix, count_matrix)
 
 # Function to get book recommendations based on main category, sub category, or language
 def get_recommendations(query, cosine_sim=cosine_sim):
-    # Fill NaN values with empty strings
     books_df.fillna('', inplace=True)
 
     # Create a mask for matching the query across relevant columns
@@ -50,11 +49,9 @@ def get_recommendations(query, cosine_sim=cosine_sim):
         exact_match_mask = books_df['BookNameAndCode'].str.contains(query, case=False, na=False)
         exact_match_indices = books_df[exact_match_mask].index
 
-        # Add exact matches with a high score (e.g., 1.5) to prioritize them
         for idx in exact_match_indices:
             sim_scores.append((idx, 1.5))  # Boost exact matches
 
-        # Remove duplicates and sort by similarity score
         sim_scores = sorted(list(set(sim_scores)), key=lambda x: x[1], reverse=True)[:50]
         book_indices = [i[0] for i in sim_scores]
 
@@ -63,51 +60,40 @@ def get_recommendations(query, cosine_sim=cosine_sim):
     else:
         return "Sorry, no book found matching that query. Please try another."
 
-
 # Streamlit App UI and Logic
 def book_recommendation_system():
     st.title('Book Recommendation System')
 
-    # Capture query parameters from the URL
+    # Get the query parameter from the URL
     query_params = st.experimental_get_query_params()
+    query = query_params.get("query", [None])[0]  # Get the 'query' parameter, default to None
 
-    # Check if the query parameter is present and set it to session state
-    if 'query' in query_params:
-        user_input = query_params['query'][0]
-        st.session_state.user_input = user_input
-    else:
-        user_input = st.session_state.get('user_input', '')
-
-    # Input for book category, subcategory, or language
-    if user_input:
-        # Provide book recommendations based on user input
-        st.write(f"Looking for recommendations related to: **{user_input}**")
+    if query:
+        st.write(f"Looking for recommendations related to: **{query}**")
 
         # Call the recommendation function
-        recommendations = get_recommendations(user_input)
+        recommendations = get_recommendations(query)
 
         # Display recommendations
         display_recommendations(recommendations)
+
     else:
-        st.write("Please enter a search term to find book recommendations.")
+        st.write("Please enter a search term in the URL (e.g., ?query=Fiction)")
 
 # Function to display the recommendations in a table with clickable links
 def display_recommendations(recommendations):
     if isinstance(recommendations, pd.DataFrame):
         entries_per_page = st.selectbox('Select number of entries to display:', options=[10, 25, 50], index=0)
         limited_recommendations = recommendations.head(entries_per_page)
-        # Format the 'Book Link' column to make links clickable
+
         if 'Book Link' in recommendations.columns:
             recommendations['Book Link'] = recommendations['Book Link'].apply(
                 lambda link: f'<a href="{link}" target="_blank">View Book</a>' if pd.notnull(link) else ''
             )
 
-        # Display the data frame with clickable links
         st.write(recommendations.to_html(escape=False, index=False), unsafe_allow_html=True)
     else:
         st.write(recommendations)
 
-
-# Run the book recommendation system
 if __name__ == "__main__":
     book_recommendation_system()
